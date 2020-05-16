@@ -21,6 +21,8 @@ import logging
 import time
 
 from trade_for_me import __version__
+import cbpro
+import pprint
 
 __author__ = "Hung Nguyen"
 __copyright__ = "Hung Nguyen"
@@ -28,7 +30,22 @@ __license__ = "mit"
 
 _logger = logging.getLogger(__name__)
 
+public_client = cbpro.PublicClient()
+def auth_cbp():
+ 
+  auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
+  # Use the sandbox API (requires a different set of API access credentials)
+  auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase,
+                                    api_url="https://api-public.sandbox.pro.coinbase.com")
+def get_ratio(coin1,coin2):
+  print(coin1[0][0],coin2[0][0])
+  ratio=float(coin1[0][0])/float(coin2[0][0])
+  ratio2=float(coin2[0][0])/float(coin1[0][0])
+  return ratio,ratio2
 
+def get_asking(market,trans_type,level=1):
+  cur_price=public_client.get_product_order_book(market,level=level)[trans_type]
+  return  cur_price
 def btc_climber(target,altcoin):
     """Will trade your current coin once the ratio and current market has buyer to take your
     for btc
@@ -40,11 +57,15 @@ def btc_climber(target,altcoin):
     Returns:
       string: Sucess status string and time
     """
-    i=0
-    while i<3:
-      time.sleep(1)
-      print("waking up to check for you")
-      i+=1
+    
+ 
+    # Get the order book at the default level.
+
+    btc=get_asking('BTC-USD','asks')
+    alt=get_asking('REP-USD','asks')
+    alt_usd=get_asking('REP-BTC','asks')
+    ratio=get_ratio(btc,alt)
+    print(btc,alt,ratio,alt_usd)
     return 'abc'
 
 
@@ -110,6 +131,7 @@ def main(args):
     args = parse_args(args)
     setup_logging(args.loglevel)
     _logger.debug("Starting crazy calculations...")
+    btc_climber(args.t,args.c)
     #print("The {}-th Fibonacci number is {}".format(args.n, trade_for_(args.n)))
     _logger.info("Script ends here")
 
