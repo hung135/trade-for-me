@@ -18,6 +18,7 @@ Note: This skeleton file can be safely removed if not needed!
 import argparse
 import sys
 import logging
+import time
 
 from trade_for_me import __version__
 
@@ -28,20 +29,23 @@ __license__ = "mit"
 _logger = logging.getLogger(__name__)
 
 
-def fib(n):
-    """Fibonacci example function
+def btc_climber(target,altcoin):
+    """Will trade your current coin once the ratio and current market has buyer to take your
+    for btc
 
     Args:
-      n (int): integer
+      target (float): float
+      altcoin (string): string
 
     Returns:
-      int: n-th Fibonacci number
+      string: Sucess status string and time
     """
-    assert n > 0
-    a, b = 1, 1
-    for i in range(n-1):
-        a, b = b, a+b
-    return a
+    i=0
+    while i<3:
+      time.sleep(1)
+      print("waking up to check for you")
+      i+=1
+    return 'abc'
 
 
 def parse_args(args):
@@ -60,10 +64,15 @@ def parse_args(args):
         action="version",
         version="trade-for-me {ver}".format(ver=__version__))
     parser.add_argument(
-        dest="n",
-        help="n-th Fibonacci number",
-        type=int,
-        metavar="INT")
+        dest="t",
+        help="target btc amount",
+        type=float,
+        metavar="FLOAT")
+    parser.add_argument(
+        dest="c",
+        help="altcoin short Name (ETH, ADA, REP etc..)",
+        type=str,
+        metavar="STRING")
     parser.add_argument(
         "-v",
         "--verbose",
@@ -101,7 +110,7 @@ def main(args):
     args = parse_args(args)
     setup_logging(args.loglevel)
     _logger.debug("Starting crazy calculations...")
-    print("The {}-th Fibonacci number is {}".format(args.n, fib(args.n)))
+    #print("The {}-th Fibonacci number is {}".format(args.n, trade_for_(args.n)))
     _logger.info("Script ends here")
 
 
