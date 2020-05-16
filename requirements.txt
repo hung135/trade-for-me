@@ -16,4 +16,5 @@
 # scipy==1.0
 #
 cbpro
+tabulate
 #git+git://github.com/danpaquin/coinbasepro-python.git
