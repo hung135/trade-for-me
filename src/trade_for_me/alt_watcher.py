@@ -31,7 +31,9 @@ def alt_watcher(altcoin,basecoin='BTC'):
     altCoin=Coin(altcoin)
     altCoin.get_positions()
     # Get the order book at the default level.
-    while True:
+     
+    while True  :
+       
       altCoin.pull_data()
       altCoin.print_table()
       #print(f'{basecoin}: ${btc[0][0]} {altcoin}->USD: ${usd_alt} {altcoin}-{basecoin}: {btc_alt} {altcoin}->{basecoin}->USD: ${dollar}')

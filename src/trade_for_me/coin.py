@@ -1,9 +1,12 @@
 import cbpro
 import os, sys
 from tabulate import tabulate
+from utils import CircularQueQue
+import pprint
 public_client = cbpro.PublicClient()
 
 class Coin:
+    positions=None
     def __init__(self,coin,basecoin='BTC'):
         self.coin=coin.upper()
         self.basecoin=basecoin.upper()
@@ -11,12 +14,24 @@ class Coin:
         self.marketusd=str(f'{coin}-USD').upper()
         self.price_asks={}
         self.price_bids={}
-        self.positions={}
+       
         self.auth_cbp()
+        if self.positions is None:
+            self.positions={}
+        self.last_500=CircularQueQue(length=500)
+        self.last_5000=CircularQueQue(length=5000)
+    def get_cost(self,position):
+        position['cost']=0.385
+
     def get_positions(self):
         print("Getting account")
         x=self.auth_client.get_accounts()
-        print(x)
+        for a in x:
+            if str(a['currency'])==str(self.coin):
+                 
+                self.positions[self.coin]=a
+                self.get_cost(a)
+        #pprint.pprint(self.positions)
     def auth_cbp(self):
         key=os.environ.get('CBPRO_KEY',None)
         b64secret=os.environ.get('CBPRO_SECRET_KEY',None)
@@ -50,23 +65,32 @@ class Coin:
     def pull_data(self):
         self.get_asks()
         self.get_bids()
-    def print(self):
-        btc=get_asking('BTC-USD','asks')
-        alt_usd=get_asking(f'{self.coin}-USD','asks')
-        alt_btc=get_asking(f'{self.coin}-BTC','asks') 
-        print(btc,alt_usd,alt_btc)
+        for k in self.price_asks.keys():
+            self.last_500.add(self.price_asks[k][0][0])
+            self.last_5000.add(self.price_asks[k][0][0])
+            break
+   
     
     def print_table(self):
-        header=['type','Market', 'Price','QTY','MYQTY']
+        header=['type','Market', 'Price','QTY','MyQTY','My$','Cost','Prof','SessionAvg']
         data=[  ]
         for k in self.price_asks.keys():
             p=self.price_asks[k][0][0]
             qty=self.price_asks[k][0][1]
-            myqty=self.positions.get(k,0)
-            data.append(['asks',k,p,qty,myqty])
+            print(k)
+            myqty=float(self.positions.get(k.split('-')[0],{"balance": 0.0})['balance'])
+            cost=float(self.positions.get(k.split('-')[0],{"cost": 0.0})['cost'])
+            data.append(['asks',k,p,qty,myqty,'',''])
             p=self.price_bids[k][0][0]
+            mydollar=round(myqty*float(p),2)
+             
+            profit='$0.00'
+            if cost*myqty>mydollar:
+                profit=f'-${round(cost*myqty-mydollar,2)}'
+            else:
+                profit=f'+${round(mydollar-cost*myqty,2)}'
             qty=self.price_bids[k][0][1]
-            data.append(['bids',k,p,qty,myqty])
+            data.append(['bids',k,p,qty,myqty,f'${mydollar}',cost,profit,self.last_500.avg()])
             
         print(tabulate(data, headers=header))
         print('\n')
