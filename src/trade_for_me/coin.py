@@ -2,6 +2,7 @@ import cbpro
 import os, sys
 from tabulate import tabulate
 from utils import CircularQueQue
+from utils import clear
 import pprint
 public_client = cbpro.PublicClient()
 
@@ -14,12 +15,15 @@ class Coin:
         self.marketusd=str(f'{coin}-USD').upper()
         self.price_asks={}
         self.price_bids={}
+        self.last_trade_id=0
+        self.last_trade_price=0
+        self.last_trade_size=0
        
         self.auth_cbp()
         if self.positions is None:
             self.positions={}
-        self.last_500=CircularQueQue(length=500)
-        self.last_5000=CircularQueQue(length=5000)
+        self.session_price=CircularQueQue(length=1*60*60*2) #2 hours 
+        self.session_qty=CircularQueQue(length=1*60*60*2) 
     def get_cost(self,position):
         position['cost']=0.385
 
@@ -61,18 +65,46 @@ class Coin:
         self.price_asks[self.marketusd]=self.get_asking(self.marketusd,'asks')
     def get_bids(self):
         self.price_bids[self.marketusd]=self.get_asking(self.marketusd,'bids')
+    def get_last_traded(self):
+        
+        x=public_client.get_product_trades(product_id=self.marketusd)
+        
+        if len(self.session_price.list)<1:
+            print(x)
+            for a in x:
  
+                try:
+                    self.last_trade_id=int(a['trade_id'])
+                    self.last_trade_price=float(a['price'])
+                    self.last_trade_size=float(a['size'])
+                    #print(self.last_trade_id,int(a['trade_id']))
+                    self.session_price.add(self.last_trade_price)
+                    self.session_qty.add(self.last_trade_size)
+                except:
+                    pass
+        else:
+            for a in x:
+                if self.last_trade_id<int(a['trade_id']):
+                    self.last_trade_id=int(a['trade_id'])
+                    self.last_trade_price=float(a['price'])
+                    self.last_trade_size=float(a['size'])
+                    self.session_price.add(self.last_trade_price)
+                    self.session_qty.add(self.last_trade_size)
+                break
+        
+        
     def pull_data(self):
         self.get_asks()
         self.get_bids()
-        for k in self.price_asks.keys():
-            self.last_500.add(self.price_asks[k][0][0])
-            self.last_5000.add(self.price_asks[k][0][0])
-            break
+        self.get_last_traded()
+ 
+        
+             
+           
    
     
     def print_table(self):
-        header=['type','Market', 'Price','QTY','MyQTY','My$','Cost','Prof','SessionAvg']
+        header=['type','Market', 'Price','QTY','MyQTY','My$','Cost','Prof','SessionAvg','SessTot']
         data=[  ]
         for k in self.price_asks.keys():
             p=self.price_asks[k][0][0]
@@ -90,7 +122,14 @@ class Coin:
             else:
                 profit=f'+${round(mydollar-cost*myqty,2)}'
             qty=self.price_bids[k][0][1]
-            data.append(['bids',k,p,qty,myqty,f'${mydollar}',cost,profit,self.last_500.avg()])
+            data.append(['bids',k,p,qty,myqty,f'${mydollar}',cost,profit,self.session_price.avg(),sum(self.session_qty.list)])
             
+        clear()
+        #print(self.session_price.list)
+        print(f'Trade History: {(self.session_price.pos)}/{self.session_price.length}',
+                f'Highest: {self.session_price.highest}',f'Lowest: {self.session_price.lowest}'
+                ,f'LAST: {self.last_trade_price}',f'Size: {self.last_trade_size}'
+                ,'\n')
+        
         print(tabulate(data, headers=header))
-        print('\n')
+       

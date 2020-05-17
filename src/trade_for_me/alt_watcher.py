@@ -37,7 +37,7 @@ def alt_watcher(altcoin,basecoin='BTC'):
       altCoin.pull_data()
       altCoin.print_table()
       #print(f'{basecoin}: ${btc[0][0]} {altcoin}->USD: ${usd_alt} {altcoin}-{basecoin}: {btc_alt} {altcoin}->{basecoin}->USD: ${dollar}')
-      time.sleep(3)
+      time.sleep(1)
     return 'abc'
 
 
