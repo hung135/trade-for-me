@@ -7,7 +7,8 @@ import time
 from trade_for_me import __version__
 import cbpro
 import pprint
-from tabulate import tabulate
+
+from coin import Coin
 
 
 __author__ = "Hung Nguyen"
@@ -15,38 +16,7 @@ __copyright__ = "Hung Nguyen"
 __license__ = "mit"
 
 _logger = logging.getLogger(__name__)
-
-public_client = cbpro.PublicClient()
-def auth_cbp():
  
-  auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
-  # Use the sandbox API (requires a different set of API access credentials)
-  auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase,
-                                    api_url="https://api-public.sandbox.pro.coinbase.com")
-def get_ratio(coin1,coin2):
-  print(coin1[0][0],coin2[0][0])
-  ratio=float(coin1[0][0])/float(coin2[0][0])
-  ratio2=float(coin2[0][0])/float(coin1[0][0])
-  return ratio,ratio2
-def print_table(basecoin,altcoin,btc,btc_alt,dollar):
-  header=['Market', 'Price']
-  data=[[basecoin, f'${btc[0][0]}']
-        , [f'{altcoin}', f'${dollar}']
-        , [f'{altcoin}-{basecoin}', f'{btc_alt}']
-        ]
-
-  print(tabulate(data, headers=header))
-  print('\n')
-   #print(f'{basecoin}: ${btc[0][0]} {altcoin}->USD: ${usd_alt} {altcoin}-{basecoin}: {btc_alt} {altcoin}->{basecoin}->USD: ${dollar}')
-def get_asking(market,trans_type,level=1):
-   
-  try:
-    x=public_client.get_product_order_book(market,level=level)
-    cur_price=x[trans_type]
-  except Exception as e:
-    print("Error Getting ",e)
-    return [[0,0,0]]
-  return  cur_price 
 def alt_watcher(altcoin,basecoin='BTC'):
     """Watch an Alcoin to BTC (base coin) or USD
 
@@ -58,17 +28,12 @@ def alt_watcher(altcoin,basecoin='BTC'):
       string: Sucess status string and time
     """
     
- 
+    altCoin=Coin(altcoin)
+    altCoin.get_positions()
     # Get the order book at the default level.
     while True:
-      btc=get_asking(f'{basecoin}-USD','asks')
-      alt_usd=get_asking(f'{altcoin}-USD','asks')
-      alt_btc=get_asking(f'{altcoin}-{basecoin}','asks')
-      
-      usd_alt=alt_usd[0][0]
-      btc_alt=alt_btc[0][0]
-      dollar=round(float(btc_alt)*float(btc[0][0]),4)
-      print_table(basecoin,altcoin,btc,btc_alt,dollar)
+      altCoin.pull_data()
+      altCoin.print_table()
       #print(f'{basecoin}: ${btc[0][0]} {altcoin}->USD: ${usd_alt} {altcoin}-{basecoin}: {btc_alt} {altcoin}->{basecoin}->USD: ${dollar}')
       time.sleep(3)
     return 'abc'

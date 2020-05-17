@@ -11,7 +11,7 @@
 	},
 	// mount the bash.rc file in devconatainer to run each time we open terminal
 	"mounts": [
-		"source=/Users/hung/gitHub/trade-for-me/.devcontainer/bash.rc,target=/root/.bashrc,type=bind,consistency=cached"
+		"source=${localWorkspaceFolder}/.devcontainer/bash.rc,target=/root/.bashrc,type=bind,consistency=cached"
 	],
 	// Set *default* container specific settings.json values on container create.
 	"settings": { 
