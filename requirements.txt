@@ -17,4 +17,5 @@
 #
 cbpro
 tabulate
+pylint
 #git+git://github.com/danpaquin/coinbasepro-python.git

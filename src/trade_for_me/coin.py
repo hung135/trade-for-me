@@ -18,23 +18,35 @@ class Coin:
         self.last_trade_id=0
         self.last_trade_price=0
         self.last_trade_size=0
+        self.dump_file='./transhistory.csv'
        
         self.auth_cbp()
         if self.positions is None:
             self.positions={}
         self.session_price=CircularQueQue(length=1*60*60*2) #2 hours 
         self.session_qty=CircularQueQue(length=1*60*60*2) 
+        self.session_tradeid=CircularQueQue(length=1*60*60*2) 
+        self.session={}
+        self.read_file()
+    def read_file(self):
+        trans = {}
+        with open(self.dump_file,'r') as f:
+            for line in f:
+                zz=line.split(',')
+                trans[f'{zz[0]}{zz[1]}']=zz 
+        #print(trans)
     def get_cost(self,position):
         position['cost']=0.385
 
     def get_positions(self):
         print("Getting account")
-        x=self.auth_client.get_accounts()
-        for a in x:
-            if str(a['currency'])==str(self.coin):
-                 
-                self.positions[self.coin]=a
-                self.get_cost(a)
+        if self.auth_client:
+            x=self.auth_client.get_accounts()
+            for a in x:
+                if str(a['currency'])==str(self.coin):
+                    
+                    self.positions[self.coin]=a
+                    self.get_cost(a)
         #pprint.pprint(self.positions)
     def auth_cbp(self):
         key=os.environ.get('CBPRO_KEY',None)
@@ -45,8 +57,8 @@ class Coin:
             print(f'\texport CBPRO_KEY={key}')
             print(f'\texport CBPRO_SECRET_KEY={b64secret}')
             print(f'\texport CBPRO_PASSPHRASE={passphrase}')
-
-            sys.exit('Set your Keys in Environment Variables')
+            self.auth_client = None
+            #sys.exit('Set your Keys in Environment Variables')
         else:
             self.auth_client = cbpro.AuthenticatedClient(key, b64secret, passphrase)
         # Use the sandbox API (requires a different set of API access credentials)
@@ -63,8 +75,10 @@ class Coin:
         return  cur_price
     def get_asks(self):
         self.price_asks[self.marketusd]=self.get_asking(self.marketusd,'asks')
+        self.price_asks[self.market]=self.get_asking(self.market,'asks')
     def get_bids(self):
         self.price_bids[self.marketusd]=self.get_asking(self.marketusd,'bids')
+        self.price_bids[self.market]=self.get_asking(self.market,'bids')
     def get_last_traded(self):
         
         x=public_client.get_product_trades(product_id=self.marketusd)
@@ -80,6 +94,7 @@ class Coin:
                     #print(self.last_trade_id,int(a['trade_id']))
                     self.session_price.add(self.last_trade_price)
                     self.session_qty.add(self.last_trade_size)
+                    self.session_tradeid.add(self.last_trade_id)
                 except:
                     pass
         else:
@@ -90,6 +105,7 @@ class Coin:
                     self.last_trade_size=float(a['size'])
                     self.session_price.add(self.last_trade_price)
                     self.session_qty.add(self.last_trade_size)
+                    self.session_tradeid.add(self.last_trade_id)
                 break
         
         
@@ -97,14 +113,21 @@ class Coin:
         self.get_asks()
         self.get_bids()
         self.get_last_traded()
+    #dump history to file to be used next time
+    def dump_to_file(self):
+        with open(self.dump_file,'a+') as f:
+            for ii in range(0,len(self.session_qty.list)):
+                f.writelines(f'{self.market},{self.session_tradeid.list[ii]},{self.session_price.list[ii]},{self.session_qty.list[ii]}\n')
+                
  
-        
+    def __del__(self):
+        self.dump_to_file()
              
            
    
     
     def print_table(self):
-        header=['type','Market', 'Price','QTY','MyQTY','My$','Cost','Prof','SessionAvg','SessTot']
+        header=['type','Market', 'Price','QTY','MyQTY','My$','Cost','Prof','SessionAvg','SessTot','AvgSize']
         data=[  ]
         for k in self.price_asks.keys():
             p=self.price_asks[k][0][0]
@@ -122,9 +145,9 @@ class Coin:
             else:
                 profit=f'+${round(mydollar-cost*myqty,2)}'
             qty=self.price_bids[k][0][1]
-            data.append(['bids',k,p,qty,myqty,f'${mydollar}',cost,profit,self.session_price.avg(),sum(self.session_qty.list)])
+            data.append(['bids',k,p,qty,myqty,f'${mydollar}',cost,profit,self.session_price.avg(),sum(self.session_qty.list),self.session_qty.avg()])
             
-        clear()
+        #clear()
         #print(self.session_price.list)
         print(f'Trade History: {(self.session_price.pos)}/{self.session_price.length}',
                 f'Highest: {self.session_price.highest}',f'Lowest: {self.session_price.lowest}'
