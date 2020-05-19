@@ -1,8 +1,8 @@
 import cbpro
 import os, sys
 from tabulate import tabulate
-from utils import CircularQueQue
-from utils import clear
+from .utils import CircularQueQue
+from .utils import clear
 import pprint
 public_client = cbpro.PublicClient()
 

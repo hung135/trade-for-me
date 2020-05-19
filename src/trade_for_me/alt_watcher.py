@@ -8,7 +8,7 @@ from trade_for_me import __version__
 import cbpro
 import pprint
 
-from coin import Coin
+from .coin import Coin
 
 
 __author__ = "Hung Nguyen"
