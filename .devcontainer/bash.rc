@@ -1,1 +1,2 @@
  alias runit='python /workspaces/trade-for-me/src/trade_for_me/alt_watcher.py'
+ export PYTHONPATH=/workspaces/trade-for-me/src/
